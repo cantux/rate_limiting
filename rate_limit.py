@@ -26,15 +26,17 @@ class RateLimiter(object):
         @desc check if user is allowed to make a request.
                 evict on every request
         @param user_id
-        @param args list of test argiments. currently used for specifying the arrival of a request
+        @param args list of test arguments. currently used for specifying the arrival of a request
         """
         user_data = self.u_q[user_id]
-        with user_data[2]:
-            req_queue = user_data[1]
+        limit = user_data[0]
+        req_queue = user_data[1]
+        req_queue_lock = user_data[2]
+
+        with req_queue_lock:
             current_time = args[0] if args else time.time()
             RateLimiter.evict(req_queue, self.time_window_seconds, current_time)
 
-            limit = user_data[0]
             if len(req_queue) >= limit:
                 raise RateLimiter.ApiRateLimitReachedException("user: {user_id}, exceeded limit: {limit}".format(user_id=user_id, limit=limit))
             else:
